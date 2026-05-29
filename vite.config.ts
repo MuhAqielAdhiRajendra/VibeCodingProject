@@ -6,5 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(), // Tambahkan fungsi ini di dalam array plugins
+    
   ],
+  server: {
+    allowedHosts: true, // <--- TAMBAHIN BAGIAN INI WOK
+  }
 })

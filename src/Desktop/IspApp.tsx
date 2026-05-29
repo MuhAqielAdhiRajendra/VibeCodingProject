@@ -30,8 +30,8 @@ export default function IspApp({ onClose }: { onClose: () => void }) {
   const isMaxed = price < 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 landscape:p-1" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
-      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[450px] h-[95vh] md:h-[400px]" style={{
+    <div className="fixed inset-0 z-50 flex items-center landscape:items-start md:items-center justify-center overflow-y-auto p-2 landscape:py-8 landscape:px-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[450px] h-[95vh] landscape:h-[380px] md:h-[400px]" style={{
         background: '#0a101d', border: '1px solid #1c2c4d', boxShadow: '0 0 50px rgba(0, 100, 255, 0.2)'
       }}>
         {/* Top Bar */}

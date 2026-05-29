@@ -47,7 +47,7 @@ export default function Taskbar({ onSwitchToTerminal, currentTime }: TaskbarProp
       {/* Center - Reputation bar + money */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
         {/* Reputation mini bar */}
-        <div className="flex items-center gap-1.5 font-mono">
+        <div className="hidden sm:flex items-center gap-1.5 font-mono">
           <span className="text-[9px]" style={{ color: '#ff4400' }}>BH</span>
           <div className="w-20 h-1.5 rounded-full overflow-hidden relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
             {/* Gradient bar */}
@@ -75,11 +75,11 @@ export default function Taskbar({ onSwitchToTerminal, currentTime }: TaskbarProp
 
       {/* Right side - Clock & indicators */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5">
           <span className="text-[10px]" style={{ color: '#00ff88', opacity: 0.6 }}>⬤</span>
           <span className="text-[10px] font-mono" style={{ color: 'rgba(0,255,136,0.5)' }}>TOR</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5">
           <span className="text-[10px]" style={{ color: '#ffaa00', opacity: 0.6 }}>⬤</span>
           <span className="text-[10px] font-mono" style={{ color: 'rgba(255,170,0,0.5)' }}>VPN</span>
         </div>

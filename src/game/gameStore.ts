@@ -29,6 +29,15 @@ let scannedTargets: StoredScan[] = [];
 let lootItems: LootItem[] = [];
 let listeners: (() => void)[] = [];
 
+// VIP freelance missions tracking
+let completedVipMissions: string[] = [];
+let failedVipMissions: string[] = [];
+
+// White Hat auditing missions tracking
+let completedAuditMissions: string[] = [];
+let failedAuditMissions: string[] = [];
+
+
 // Reputation: -100 (full black hat) to +100 (full white hat), starts at 0
 let reputation = 0;
 let money = 0; // in USD
@@ -62,13 +71,127 @@ let currentFakeIp = '';
 let noStealthStrikes = 0;
 let noVpnStrikes = 0;
 let noMacStrikes = 0;
+let suspect = 0;
+let lastDecayTime = Date.now();
 export let gameOverReason: string | null = null;
 
-function notify() { listeners.forEach(fn => fn()); }
+const LOCAL_STORAGE_KEY = 'nightos_game_save';
+
+export function clearSave() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to clear save data', e);
+    }
+  }
+  // Reset in-memory values as well
+  scannedTargets = [];
+  lootItems = [];
+  reputation = 0;
+  money = 0;
+  crypto = 0;
+  internetSpeed = 1;
+  tools = { stealthMode: false, fakeIp: false, vpn: false, proxyChain: false, macSpoof: false };
+  ownedTools = { stealthMode: true, fakeIp: true, vpn: false, proxyChain: false, macSpoof: false };
+  currentFakeIp = '';
+  noStealthStrikes = 0;
+  noVpnStrikes = 0;
+  noMacStrikes = 0;
+  allOffStrikes = 0;
+  suspect = 0;
+  gameOverReason = null;
+  completedVipMissions = [];
+  failedVipMissions = [];
+  completedAuditMissions = [];
+  failedAuditMissions = [];
+  notify();
+}
+
+function saveState() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const state = {
+      scannedTargets,
+      lootItems,
+      reputation,
+      money,
+      crypto,
+      internetSpeed,
+      tools,
+      ownedTools,
+      currentFakeIp,
+      noStealthStrikes,
+      noVpnStrikes,
+      noMacStrikes,
+      allOffStrikes,
+      suspect,
+      gameOverReason,
+      completedVipMissions,
+      failedVipMissions,
+      completedAuditMissions,
+      failedAuditMissions,
+    };
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Failed to save state to localStorage', e);
+  }
+}
+
+function loadState() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const data = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!data) return;
+    const state = JSON.parse(data);
+    if (!state) return;
+    
+    gameOverReason = state.gameOverReason || null;
+
+    if (Array.isArray(state.scannedTargets)) scannedTargets = state.scannedTargets;
+    if (Array.isArray(state.lootItems)) lootItems = state.lootItems;
+    if (typeof state.reputation === 'number') reputation = state.reputation;
+    if (typeof state.money === 'number') money = state.money;
+    if (typeof state.crypto === 'number') crypto = state.crypto;
+    if (typeof state.internetSpeed === 'number') internetSpeed = state.internetSpeed;
+    if (state.tools) tools = { ...tools, ...state.tools };
+    if (state.ownedTools) ownedTools = { ...ownedTools, ...state.ownedTools };
+    if (typeof state.currentFakeIp === 'string') currentFakeIp = state.currentFakeIp;
+    if (typeof state.noStealthStrikes === 'number') noStealthStrikes = state.noStealthStrikes;
+    if (typeof state.noVpnStrikes === 'number') noVpnStrikes = state.noVpnStrikes;
+    if (typeof state.noMacStrikes === 'number') noMacStrikes = state.noMacStrikes;
+    if (typeof state.allOffStrikes === 'number') allOffStrikes = state.allOffStrikes;
+    if (typeof state.suspect === 'number') suspect = state.suspect;
+    if (Array.isArray(state.completedVipMissions)) completedVipMissions = state.completedVipMissions;
+    if (Array.isArray(state.failedVipMissions)) failedVipMissions = state.failedVipMissions;
+    if (Array.isArray(state.completedAuditMissions)) completedAuditMissions = state.completedAuditMissions;
+    if (Array.isArray(state.failedAuditMissions)) failedAuditMissions = state.failedAuditMissions;
+  } catch (e) {
+    console.error('Failed to load state from localStorage', e);
+  }
+}
+
+function notify() {
+  saveState();
+  listeners.forEach(fn => fn());
+}
 
 export function subscribe(fn: () => void) {
   listeners.push(fn);
   return () => { listeners = listeners.filter(l => l !== fn); };
+}
+
+export function getSuspect() { return suspect; }
+export function getGameOverReason() { return gameOverReason; }
+
+export function continueGame() {
+  suspect = 0;
+  gameOverReason = null;
+  noStealthStrikes = 0;
+  noVpnStrikes = 0;
+  noMacStrikes = 0;
+  allOffStrikes = 0;
+  notify();
 }
 
 export function getTools(): StealthTools { return { ...tools }; }
@@ -102,6 +225,7 @@ export function checkStealthPenalties(action: 'scan' | 'exploit' | 'download'): 
     allOffStrikes++;
     if (allOffStrikes >= 5) {
        gameOverReason = "Anda tak menggunakan keamanan apapun! Semua terekspos ketika Anda melaksanakan aksi.";
+       saveState();
        return { caught: true, reason: gameOverReason };
     }
   }
@@ -110,6 +234,7 @@ export function checkStealthPenalties(action: 'scan' | 'exploit' | 'download'): 
     noStealthStrikes++;
     if (noStealthStrikes >= 5) {
       gameOverReason = "Aktivitas scanning mencurigakan terdeteksi oleh ISP. Koneksi diputus paksa.";
+      saveState();
       return { caught: true, reason: gameOverReason };
     }
   }
@@ -119,12 +244,14 @@ export function checkStealthPenalties(action: 'scan' | 'exploit' | 'download'): 
       noVpnStrikes++;
       if (noVpnStrikes >= 4) {
         gameOverReason = "Lokasi Anda terlacak dan Anda ditahan karena tidak melakukan IP Spoofing.";
+        saveState();
         return { caught: true, reason: gameOverReason };
       }
     } else if (!tools.vpn) {
       noVpnStrikes++;
       if (noVpnStrikes >= 5) {
         gameOverReason = "Koneksi tidak terenkripsi berhasil disadap oleh penegak hukum.";
+        saveState();
         return { caught: true, reason: gameOverReason };
       }
     }
@@ -133,16 +260,66 @@ export function checkStealthPenalties(action: 'scan' | 'exploit' | 'download'): 
       noMacStrikes++;
       if (noMacStrikes >= 6) {
         gameOverReason = "Alamat fisik (MAC) perangkat Anda diblacklist dan berhasil dilacak.";
+        saveState();
         return { caught: true, reason: gameOverReason };
       }
     }
   }
 
+  saveState();
   return { caught: false };
 }
 
 export function getReputation() { return reputation; }
 export function getMoney() { return money; }
+
+export function getCompletedVipMissions() { return completedVipMissions; }
+export function getFailedVipMissions() { return failedVipMissions; }
+
+export function getCompletedAuditMissions() { return completedAuditMissions; }
+export function getFailedAuditMissions() { return failedAuditMissions; }
+
+export function completeAuditMission(missionId: string, payout: number, repGain: number) {
+  if (!completedAuditMissions.includes(missionId)) {
+    completedAuditMissions.push(missionId);
+    money += payout; // Bug bounties pay in clean fiat USD!
+    reputation = Math.min(100, reputation + repGain); // increases reputation (White Hat activity)
+    notify();
+  }
+}
+
+export function failAuditMission(missionId: string) {
+  if (!failedAuditMissions.includes(missionId)) {
+    failedAuditMissions.push(missionId);
+    notify();
+  }
+}
+
+export function penalizeAuditRep(amount: number) {
+  reputation = Math.max(-100, reputation - amount);
+  notify();
+}
+
+export function completeVipMission(missionId: string, payout: number, repImpact: number) {
+  if (!completedVipMissions.includes(missionId)) {
+    completedVipMissions.push(missionId);
+    crypto += payout;
+    reputation = Math.max(-100, reputation - repImpact); // reduces reputation (Black Hat activity)
+    notify();
+  }
+}
+
+export function failVipMission(missionId: string) {
+  if (!failedVipMissions.includes(missionId)) {
+    failedVipMissions.push(missionId);
+    notify();
+  }
+}
+
+export function penalizeVipTrust(amount: number) {
+  reputation = Math.max(-100, reputation - amount);
+  notify();
+}
 
 export function getInternetSpeed() { return internetSpeed; }
 export function getSpeedMultiplier() { return 1 / Math.sqrt(internetSpeed); }
@@ -218,7 +395,13 @@ export function sellLoot(lootId: string): { success: boolean; reward: number; me
   reputation = Math.max(-100, reputation - 10);
 
   // Risk increases the more black hat you are. Missing proxyChain increases risk significantly.
-  const riskBase = tools.proxyChain ? 0.08 : 0.35; 
+  let riskBase = tools.proxyChain ? 0.08 : 0.35; 
+  
+  // Decrease chance of failing to sell when the 2 default tools (stealthMode & fakeIp) are ON
+  if (tools.stealthMode && tools.fakeIp) {
+    riskBase = riskBase * 0.3; // Reduces trace risk by 70%
+  }
+
   const riskBonus = Math.abs(Math.min(0, reputation)) * 0.002; 
   const caught = Math.random() < (riskBase + riskBonus);
 
@@ -230,6 +413,13 @@ export function sellLoot(lootId: string): { success: boolean; reward: number; me
     const penalty = Math.floor(money * 0.15);
     money = Math.max(0, money - penalty);
     reputation = Math.max(-100, reputation - 5);
+    
+    // Increment suspect heat
+    suspect = Math.min(100, suspect + 25);
+    if (suspect >= 100) {
+      gameOverReason = "Dicurigai (Suspect) mencapai 100%! Pihak berwenang berhasil melacak aktivitas Anda dan melakukan penangkapan.";
+    }
+
     message = `⚠ TRACED! Buyer was a honeypot. Lost $${penalty.toLocaleString()} covering tracks. Heat level increased.`;
     notify();
     return { success: false, reward: 0, message, caught: true };
@@ -266,6 +456,75 @@ export function spendCrypto(amount: number): boolean {
   return true;
 }
 
+export function getRateAtTimestamp(ts: number): { rate: number; trend: 'up' | 'down' | 'stable' | 'crash' } {
+  const interval = Math.floor(ts / 120000); // 2 minutes in ms
+  // Simple LCG pseudo-random seed based on interval
+  const x = Math.sin(interval) * 10000;
+  const r = x - Math.floor(x);
+  
+  let rate = 1.0;
+  let trend: 'up' | 'down' | 'stable' | 'crash' = 'stable';
+  
+  if (r < 0.6) {
+    const normalR = r / 0.6;
+    rate = 0.6 + normalR * 0.8; // [0.6, 1.4]
+    trend = rate > 1.1 ? 'up' : (rate < 0.9 ? 'down' : 'stable');
+  } else if (r < 0.75) {
+    const peakR = (r - 0.6) / 0.15;
+    rate = 1.5 + peakR * 1.5; // [1.5, 3.0]
+    trend = 'up';
+  } else {
+    const crashR = (r - 0.75) / 0.25;
+    rate = 0.01 + crashR * 0.19; // [0.01, 0.20] (drop banget, ndak laku)
+    trend = 'crash';
+  }
+  
+  rate = Math.round(rate * 100) / 100;
+  return { rate, trend };
+}
+
+export function getExchangeRate(): { rate: number; trend: 'up' | 'down' | 'stable' | 'crash' } {
+  return getRateAtTimestamp(Date.now());
+}
+
+export function getTimeUntilNextFluctuation(): number {
+  const now = Date.now();
+  const nextChange = (Math.floor(now / 120000) + 1) * 120000;
+  return Math.max(0, Math.ceil((nextChange - now) / 1000));
+}
+
+let lastInterval = Math.floor(Date.now() / 120000);
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    const currentInterval = Math.floor(Date.now() / 120000);
+    if (currentInterval !== lastInterval) {
+      lastInterval = currentInterval;
+      notify();
+    }
+  }, 5000);
+
+  // Suspect Heat decay loop: check every 1 second
+  setInterval(() => {
+    if (suspect > 0) {
+      // Base decay interval: 2 seconds
+      // Slower decay the further "left" (Black Hat / reputation < 0)
+      // e.g. at reputation = -100, interval is 2 + 10 = 12 seconds
+      const decayIntervalMs = reputation < 0 
+        ? (2 + Math.abs(reputation) / 10) * 1000 
+        : 2000;
+
+      if (Date.now() - lastDecayTime >= decayIntervalMs) {
+        suspect = Math.max(0, suspect - 1);
+        lastDecayTime = Date.now();
+        notify();
+      }
+    } else {
+      // Keep lastDecayTime fresh so it doesn't decay immediately when first point is added
+      lastDecayTime = Date.now();
+    }
+  }, 1000);
+}
+
 export function exchangeCrypto(amount: number) {
   if (amount <= 0 || crypto < amount) {
     return { success: false, message: 'Insufficient NTC balance.', caught: false };
@@ -292,11 +551,18 @@ export function exchangeCrypto(amount: number) {
     }
   }
   
+  const { rate } = getExchangeRate();
+  const payout = Math.floor(amount * rate);
+  
   exchangeHistory.push({ amount, timestamp: now });
   crypto -= amount;
-  money += amount;
+  money += payout;
   notify();
-  return { success: true, message: `Successfully laundered ${amount.toLocaleString()} NTC into $${amount.toLocaleString()} clean money.`, caught: false };
+  return { 
+    success: true, 
+    message: `Successfully exchanged ${amount.toLocaleString()} NTC at rate $${rate} into $${payout.toLocaleString()} clean money.`, 
+    caught: false 
+  };
 }
 
 // Scan results
@@ -421,3 +687,6 @@ export function generateLoot(url: string, vulnType: string): LootItem | null {
   const id = `loot_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   return { id, source: url, type: t.type, content, timestamp: Date.now() };
 }
+
+// Initial state load
+loadState();

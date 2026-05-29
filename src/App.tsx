@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { infectedDevices } from './game/infectedDevicesData';
 import type { FileNode } from './game/infectedDevicesData';
 import DesktopView from './Desktop/DesktopView';
-import { getScannedTargets, findTarget, markExploited, generateLoot, addLoot, getLoot, getReputation, getMoney, getReputationLabel, sellLoot, reportVuln, toggleTool, getTools, getFakeIp, addScanResult, getCrypto, exchangeCrypto, spendCrypto, checkStealthPenalties, gameOverReason, getInternetSpeed, getSpeedMultiplier, getUpgradeSpeedPrice, upgradeInternetSpeed, getOwnedTools, unlockTool } from './game/gameStore';
+import { getScannedTargets, findTarget, markExploited, generateLoot, addLoot, getLoot, getReputation, getMoney, getReputationLabel, sellLoot, reportVuln, toggleTool, getTools, getFakeIp, addScanResult, getCrypto, exchangeCrypto, spendCrypto, checkStealthPenalties, gameOverReason, getInternetSpeed, getSpeedMultiplier, getUpgradeSpeedPrice, upgradeInternetSpeed, getOwnedTools, unlockTool, clearSave, subscribe, getSuspect, getGameOverReason, continueGame } from './game/gameStore';
 
 type GameScreen = 'warning' | 'menu' | 'gameover';
 type ViewMode = 'terminal' | 'desktop';
@@ -41,6 +41,17 @@ export default function App() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  useEffect(() => {
+    if (getGameOverReason()) {
+      setGameState('gameover');
+    }
+    return subscribe(() => {
+      if (getGameOverReason()) {
+        setGameState('gameover');
+      }
+    });
+  }, []);
 
   const getCurrentDirNode = useCallback(() => {
     if (!connectedIp) return null;
@@ -243,6 +254,7 @@ export default function App() {
         { type: 'output', text: '  man [cmd]              Show manual for a command' },
         { type: 'output', text: '  tutorial               Quick start guide' },
         { type: 'output', text: '  clear                  Clear terminal output' },
+        { type: 'output', text: '  reset / clear-save     Reset all game progress' },
         { type: 'output', text: '' },
         { type: 'output', text: ' TIP: Use ↑↓ arrows to navigate history, TAB to autocomplete\n' }
       ]);
@@ -301,7 +313,7 @@ export default function App() {
           { type: 'output', text: ' ──────────────────────────────────────' },
           { type: 'output', text: ' 1. Wallet  : Ketik "wallet" untuk melihat saldo Fiat ($) dan Crypto (NTC) Anda.' },
           { type: 'output', text: ' 2. Exchange: Ketik "exchange [jumlah]" untuk mencairkan NightCoin (NTC).' },
-          { type: 'output', text: '              Contoh: "exchange 10000" akan mencuci 10.000 NTC menjadi $10.000.' },
+          { type: 'output', text: '              Contoh: "exchange 10000" akan menukar NTC ke USD dengan rate real-time.' },
           { type: 'output', text: ' ⚠ WARNING  : Sistem AML (Anti-Money Laundering) mengawasi aliran dana!' },
           { type: 'output', text: '              Jika Anda mencairkan lebih dari 50.000 NTC sekaligus,' },
           { type: 'output', text: '              atau secara total dalam waktu 60 detik (Smurfing),' },
@@ -327,6 +339,13 @@ export default function App() {
       }
     } else if (lower === 'clear') {
       setLogs([]);
+    } else if (lower === 'reset' || lower === 'clear-save') {
+      clearSave();
+      setLogs(prev => [...prev, { type: 'output', text: 'Mengosongkan memori penyimpanan... Reboot sistem...\n' }]);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      return;
     } else if (lower === 'whoami') {
       setLogs(prev => [...prev, { type: 'output', text: isSudo ? 'root\n' : 'user\n' }]);
     } else if (lower.startsWith('install') || lower.startsWith('apt install') || lower.startsWith('apt-get install')) {
@@ -944,7 +963,7 @@ export default function App() {
         }
         runAsyncSequence([
           { text: `[EXCHANGE] Initiating transfer of ${amount.toLocaleString()} NTC...`, delay: 600 },
-          { text: `[EXCHANGE] Tumbling coins through mixer...`, delay: 1000 },
+          { text: `[EXCHANGE] Processing transaction on decentralized ledger...`, delay: 1000 },
           { text: `[EXCHANGE] Routing through offshore accounts...`, delay: 800 },
           { text: ``, delay: 200 },
           { text: result.success ? `✓ ${result.message}` : `⚠ ${result.message}`, delay: 0 },
@@ -961,6 +980,7 @@ export default function App() {
         { type: 'output', text: `  Fiat Balance: $${getMoney().toLocaleString()}` },
         { type: 'output', text: `  Crypto (NTC): ${getCrypto().toLocaleString()} NTC` },
         { type: 'output', text: `  Reputation  : ${getReputation()} (${rep.label})` },
+        { type: 'output', text: `  Suspect Heat: ${getSuspect()}%` },
         { type: 'output', text: '' },
         { type: 'output', text: '  Actions:' },
         { type: 'output', text: '    exchange [amt]   — Convert NTC to USD (Risk of AML if amt > 50k in 60s)' },
@@ -977,6 +997,7 @@ export default function App() {
         { type: 'output', text: '── REPUTATION ──' },
         { type: 'output', text: `  Status: ${info.label}` },
         { type: 'output', text: `  Score: ${rep}` },
+        { type: 'output', text: `  Suspect Heat: ${getSuspect()}%` },
         { type: 'output', text: '' },
         { type: 'output', text: `  BLACK HAT [${bar}] WHITE HAT` },
         { type: 'output', text: '' },
@@ -1161,21 +1182,58 @@ export default function App() {
 
   if (gameState === 'gameover') {
     return (
-      <div className="min-h-screen bg-black text-red-500 font-mono flex flex-col items-center justify-center p-8 select-none relative overflow-hidden">
-        <div className="absolute inset-0 bg-red-900/20 animate-pulse pointer-events-none" />
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 text-center glitch" style={{ textShadow: '0 0 20px red' }}>
-          GAME OVER
-        </h1>
-        <div className="text-xl md:text-2xl mb-8 text-center max-w-2xl text-red-400 bg-red-950/50 p-6 rounded border border-red-500/30 shadow-[0_0_15px_rgba(255,0,0,0.2)]">
-          <p className="mb-2 uppercase tracking-widest text-sm text-red-300">INCIDENT REPORT</p>
-          <p>{gameOverReason}</p>
+      <div className="min-h-screen bg-[#070202] text-red-500 font-mono flex flex-col items-center justify-center p-6 select-none relative overflow-hidden">
+        {/* Animated grid overlay */}
+        <div className="absolute inset-0 opacity-[0.05]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,0,0.3) 1px, transparent 1px)',
+          backgroundSize: '30px 30px',
+        }} />
+        <div className="absolute inset-0 bg-red-950/10 pointer-events-none" />
+        
+        {/* Premium warning symbol */}
+        <div className="text-6xl md:text-8xl animate-bounce mb-4 text-[#ff2244]" style={{ filter: 'drop-shadow(0 0 15px rgba(255,34,68,0.6))' }}>
+          ⚠️
         </div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-8 py-3 bg-red-950 border border-red-500 text-red-400 font-bold hover:bg-red-900 hover:text-white transition-colors uppercase tracking-widest z-10"
-        >
-          Reboot System
-        </button>
+
+        <h1 className="text-4xl md:text-6xl font-bold mb-2 text-center uppercase tracking-wider text-red-500" style={{ textShadow: '0 0 25px rgba(255,0,0,0.8)' }}>
+          SYSTEM COMPROMISED
+        </h1>
+        <p className="text-xs md:text-sm text-red-400/60 uppercase tracking-[0.2em] mb-6 animate-pulse">
+          — Connection Severed by Authorities —
+        </p>
+
+        {/* Detailed report box */}
+        <div className="w-full max-w-xl text-center mb-8 bg-black/80 p-5 rounded-lg border border-red-500/30 shadow-[0_0_30px_rgba(255,0,0,0.15)] backdrop-filter backdrop-blur-md">
+          <p className="mb-3 uppercase tracking-[0.2em] text-xs font-bold text-red-400 border-b border-red-500/20 pb-2">
+            INCIDENT REPORT
+          </p>
+          <p className="text-sm md:text-base text-red-200/90 leading-relaxed font-sans px-2">
+            {gameOverReason}
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md z-10 px-4">
+          <button 
+            onClick={() => {
+              continueGame();
+              setGameState('menu');
+            }}
+            className="flex-1 py-3.5 rounded font-bold uppercase tracking-widest text-xs transition-all duration-300 border bg-green-950/30 border-green-500/50 text-green-400 hover:bg-green-500 hover:text-black hover:border-green-400 hover:shadow-[0_0_20px_rgba(0,255,136,0.35)]"
+          >
+            ▶ LANJUTKAN
+          </button>
+          
+          <button 
+            onClick={() => {
+              clearSave();
+              window.location.reload();
+            }}
+            className="flex-1 py-3.5 rounded font-bold uppercase tracking-widest text-xs transition-all duration-300 border bg-red-950/30 border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-400 hover:shadow-[0_0_20px_rgba(255,0,68,0.35)]"
+          >
+            🔄 ULANG DARI AWAL
+          </button>
+        </div>
       </div>
     );
   }

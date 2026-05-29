@@ -119,10 +119,10 @@ export default function HackerBoot({ onFinish }: HackerBootProps) {
       />
 
       {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-2 border-b border-green-900/60 z-20 shrink-0">
-        <span style={{ color: '#00ff88', fontSize: 12 }}>NightOS Terminal v13.3.7</span>
-        <span style={{ color: '#ff4444', fontSize: 12 }}>⬤ SECURE MODE</span>
-        <span style={{ color: '#888', fontSize: 12 }}>PID: 1337 | USER: root</span>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-green-900/60 z-20 shrink-0 text-[10px] sm:text-xs">
+        <span style={{ color: '#00ff88' }}>NightOS Terminal</span>
+        <span className="hidden sm:inline" style={{ color: '#ff4444' }}>⬤ SECURE MODE</span>
+        <span style={{ color: '#888' }}>USER: root</span>
       </div>
 
       {/* Log output */}
@@ -168,16 +168,16 @@ export default function HackerBoot({ onFinish }: HackerBootProps) {
         </div>
 
         {/* ── BYPASS BUTTON ── */}
-        <div className="flex items-center justify-between gap-4">
-          <span style={{ color: ready ? '#ff4444' : '#555', fontSize: 11, fontFamily: 'inherit' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <span style={{ color: ready ? '#ff4444' : '#555', fontSize: 10, fontFamily: 'inherit' }}>
             {ready
-              ? '⚠  ANTIVIRUS TERDETEKSI — Bypass diperlukan untuk melanjutkan'
+              ? '⚠ ANTIVIRUS TERDETEKSI — Bypass diperlukan'
               : '· Menunggu sistem siap...'}
           </span>
           <button
             onClick={handleBypass}
             disabled={!ready}
-            className={`shrink-0 px-4 py-2 text-xs font-bold rounded border transition-all duration-300 ${ready
+            className={`w-full sm:w-auto shrink-0 px-4 py-2.5 text-xs font-bold rounded border transition-all duration-300 ${ready
               ? `border-red-500 text-red-400 hover:bg-red-500 hover:text-black cursor-pointer ${btnPulse ? 'animate-pulse shadow-[0_0_12px_rgba(255,60,60,0.7)]' : ''
               }`
               : 'border-gray-700 text-gray-600 cursor-not-allowed'

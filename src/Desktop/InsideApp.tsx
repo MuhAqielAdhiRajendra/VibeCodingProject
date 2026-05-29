@@ -153,8 +153,8 @@ export default function InsideApp({ onClose }: InsideAppProps) {
   const scoreColor = (s: number) => s < 30 ? '#ff0044' : s < 60 ? '#ffaa00' : '#00ff88';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 landscape:p-1" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
-      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[960px] h-[95vh] md:h-[700px]" style={{
+    <div className="fixed inset-0 z-50 flex items-center landscape:items-start md:items-center justify-center overflow-y-auto p-2 landscape:py-8 landscape:px-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[960px] h-[95vh] landscape:h-[450px] md:h-[700px]" style={{
         background: 'linear-gradient(180deg, #0c0e14 0%, #080a10 100%)',
         border: '1px solid rgba(0,255,136,0.15)', boxShadow: '0 0 60px rgba(0,255,136,0.08)',
       }}>
@@ -163,11 +163,11 @@ export default function InsideApp({ onClose }: InsideAppProps) {
           <div className="flex items-center gap-2">
             <span className="text-base">🔍</span>
             <span className="text-xs font-mono font-bold" style={{ color: '#00ff88' }}>INSIDE</span>
-            <span className="text-[10px] font-mono" style={{ color: 'rgba(0,255,136,0.4)' }}>— Web Vulnerability Scanner v3.2</span>
+            <span className="text-[10px] font-mono hidden sm:inline" style={{ color: 'rgba(0,255,136,0.4)' }}>— Web Vulnerability Scanner v3.2</span>
           </div>
           {/* Wallet bar */}
-          <div className="flex items-center gap-3 mr-8">
-            <div className="flex items-center gap-1 font-mono">
+          <div className="flex items-center gap-2 sm:gap-3 mr-1 sm:mr-8">
+            <div className="hidden sm:flex items-center gap-1 font-mono">
               <span className="text-[8px]" style={{ color: '#ff4400' }}>BH</span>
               <div className="w-14 h-1.5 rounded-full overflow-hidden relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, #ff0044, #888, #00ff88)', opacity: 0.4 }} />
@@ -175,18 +175,18 @@ export default function InsideApp({ onClose }: InsideAppProps) {
               </div>
               <span className="text-[8px]" style={{ color: '#00ff88' }}>WH</span>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-mono font-bold" style={{ color: '#00ccff' }}>{crypto.toLocaleString()} NTC</span>
-              <span className="text-[10px] font-mono font-bold" style={{ color: '#ffcc00' }}>${money.toLocaleString()}</span>
+            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-0 font-mono text-[9px] sm:text-[10px]">
+              <span className="font-bold" style={{ color: '#00ccff' }}>{crypto.toLocaleString()} NTC</span>
+              <span className="font-bold" style={{ color: '#ffcc00' }}>${money.toLocaleString()}</span>
             </div>
           </div>
           <button onClick={onClose} className="text-lg px-2 hover:scale-125 transition-transform" style={{ color: '#ff4444' }}>✕</button>
         </div>
 
         {/* Main content */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
           {/* Left: scan log */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="h-[200px] shrink-0 md:h-auto md:flex-1 flex flex-col min-w-0 border-b border-[#00ff88]/10 md:border-b-0">
             <div ref={logRef} className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed" style={{ color: '#88aa88', scrollbarWidth: 'thin' }}>
               {phase === 'idle' && (
                 <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
@@ -210,7 +210,7 @@ export default function InsideApp({ onClose }: InsideAppProps) {
           </div>
 
           {/* Right panel */}
-          <div className="w-[340px] shrink-0 flex flex-col border-l overflow-hidden" style={{ borderColor: 'rgba(0,255,136,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="flex-1 md:flex-none w-full md:w-[340px] flex flex-col border-t md:border-t-0 md:border-l overflow-y-auto md:overflow-hidden" style={{ borderColor: 'rgba(0,255,136,0.08)', background: 'rgba(0,0,0,0.2)' }}>
             {/* Loot action phase */}
             {phase === 'loot-action' && currentLoot && (
               <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>

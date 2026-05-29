@@ -6,7 +6,10 @@ import StealthToolsApp from './SettingsApp';
 import DarkNetApp from './DarkNetApp';
 import IspApp from './IspApp';
 import HackToolApp from './HackToolApp';
-import { getTools, subscribe, getReputation } from '../game/gameStore';
+import ZeroDayVipApp from './ZeroDayVipApp';
+import WhiteHatAuditApp from './WhiteHatAuditApp';
+import RolesApp from './RolesApp';
+import { getTools, subscribe, getReputation, getSuspect } from '../game/gameStore';
 
 interface DesktopViewProps {
   onSwitchToTerminal: () => void;
@@ -43,6 +46,7 @@ export default function DesktopView({ onSwitchToTerminal }: DesktopViewProps) {
 
   const baseIcons = [
     { icon: '⬛', label: 'Terminal', onClick: onSwitchToTerminal, glowColor: '#00ff88' },
+    { icon: '🎓', label: 'Roles Guide', onClick: () => setOpenApp('roles'), glowColor: '#ffaa00' },
     { icon: '🛡️', label: 'Stealth Tools', onClick: () => setOpenApp('stealth'), glowColor: '#8888ff' },
     { icon: '🔍', label: 'Inside', onClick: handleInsideClick, glowColor: tools.stealthMode ? '#00ffcc' : '#333333' },
     { icon: '⚡', label: 'HackTool', onClick: () => setOpenApp('hacktool'), glowColor: '#00ffaa' },
@@ -50,10 +54,29 @@ export default function DesktopView({ onSwitchToTerminal }: DesktopViewProps) {
   ];
 
   if (rep <= 10) {
-    baseIcons.push({ icon: '🕸️', label: 'DarkNet Market', onClick: () => setOpenApp('darknet'), glowColor: '#ff4444' });
+    baseIcons.push({ icon: '🕸️', label: 'Exchange', onClick: () => setOpenApp('darknet'), glowColor: '#ff4444' });
   }
   if (rep <= -30) {
-    baseIcons.push({ icon: '☠️', label: 'Zero-Day VIP', onClick: () => showNotification('☠️ WELCOME TO VIP UNDERGROUND ☠️'), glowColor: '#9900ff' });
+    baseIcons.push({
+      icon: '☠️',
+      label: 'Zero-Day VIP',
+      onClick: () => {
+        showNotification('☠️ ACCESSING VIP UNDERGROUND ☠️');
+        setOpenApp('zeroday');
+      },
+      glowColor: '#9900ff'
+    });
+  }
+  if (rep >= 30) {
+    baseIcons.push({
+      icon: '🔬',
+      label: 'White-Hat Audit',
+      onClick: () => {
+        showNotification('🔬 ACCESSING ETHICAL SECURITY AUDITORS 🔬');
+        setOpenApp('whitehat');
+      },
+      glowColor: '#06b6d4'
+    });
   }
 
   const desktopIcons = baseIcons;
@@ -70,16 +93,16 @@ export default function DesktopView({ onSwitchToTerminal }: DesktopViewProps) {
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #00ff00 2px, #00ff00 4px)',
       }} />
       {/* Corners */}
-      <div className="absolute top-3 left-3 z-20" style={{ color: 'rgba(0,255,136,0.15)', fontSize: 10, fontFamily: 'monospace' }}>
+      <div className="absolute top-3 left-3 z-20 hidden sm:block" style={{ color: 'rgba(0,255,136,0.15)', fontSize: 10, fontFamily: 'monospace' }}>
         ┌─ NIGHTOS DESKTOP ─────────
       </div>
-      <div className="absolute top-3 right-3 z-20" style={{ color: 'rgba(0,255,136,0.15)', fontSize: 10, fontFamily: 'monospace' }}>
+      <div className="absolute top-3 right-3 z-20 hidden sm:block" style={{ color: 'rgba(0,255,136,0.15)', fontSize: 10, fontFamily: 'monospace' }}>
         ────── SECURE SESSION ─┐
       </div>
 
       {/* Icons */}
-      <div className="absolute top-10 left-4 right-4 bottom-14 z-10 p-4">
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 content-start">
+      <div className="absolute top-20 md:top-10 left-4 right-4 md:right-[240px] bottom-14 z-10 p-4">
+        <div className="grid grid-cols-3 min-[380px]:grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 content-start">
           {desktopIcons.map((item, i) => (
             <DesktopIcon key={i} icon={item.icon} label={item.label} onClick={item.onClick} glowColor={item.glowColor} />
           ))}
@@ -87,22 +110,26 @@ export default function DesktopView({ onSwitchToTerminal }: DesktopViewProps) {
       </div>
 
       {/* System status */}
-      <div className="absolute top-10 right-4 z-20 p-3 rounded-lg hidden md:block" style={{
+      <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:top-10 md:w-52 z-20 p-2 md:p-3 rounded-lg flex flex-row md:flex-col items-center md:items-stretch justify-between md:justify-start gap-3 md:gap-1 font-mono" style={{
         background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.1)',
-        fontFamily: "'Courier New', monospace", minWidth: 200,
+        backdropFilter: 'blur(8px)',
       }}>
-        <div className="text-[10px] mb-2 tracking-widest" style={{ color: 'rgba(0,255,136,0.4)' }}>── SYSTEM STATUS ──</div>
-        <div className="space-y-1">
+        <div className="text-[9px] md:text-[10px] tracking-widest shrink-0 font-bold" style={{ color: 'rgba(0,255,136,0.4)' }}>
+          <span className="md:hidden">SYS STATUS</span>
+          <span className="hidden md:inline">── SYSTEM STATUS ──</span>
+        </div>
+        <div className="flex flex-row md:flex-col flex-1 justify-around md:justify-start gap-x-3 gap-y-1 md:gap-1 w-full overflow-x-auto md:overflow-x-visible custom-scrollbar">
           {[
             { label: 'CPU', value: '12%', color: '#00ff88' },
             { label: 'MEM', value: '4.2G/64G', color: '#00ccff' },
             { label: 'STEALTH', value: tools.stealthMode ? 'ON' : 'OFF', color: tools.stealthMode ? '#00ff88' : '#ff4444' },
             { label: 'FAKE IP', value: tools.fakeIp ? 'ON' : 'OFF', color: tools.fakeIp ? '#00ff88' : '#ff4444' },
+            { label: 'SUSPECT', value: `${getSuspect()}%`, color: getSuspect() > 70 ? '#ff0044' : getSuspect() > 40 ? '#ffaa00' : getSuspect() > 0 ? '#00ccff' : '#556655' },
             { label: 'TOOLS', value: `${Object.values(tools).filter(Boolean).length}/5`, color: '#ffaa00' },
           ].map((s, i) => (
-            <div key={i} className="flex justify-between text-[10px]">
-              <span style={{ color: 'rgba(0,255,136,0.3)' }}>{s.label}</span>
-              <span style={{ color: s.color, opacity: 0.6 }}>{s.value}</span>
+            <div key={i} className="flex justify-between items-center gap-1 md:gap-0 text-[8px] md:text-[10px] whitespace-nowrap">
+              <span className="opacity-50 mr-1 md:mr-0" style={{ color: 'rgba(0,255,136,0.3)' }}>{s.label}</span>
+              <span style={{ color: s.color, opacity: 0.8 }}>{s.value}</span>
             </div>
           ))}
         </div>
@@ -120,10 +147,13 @@ export default function DesktopView({ onSwitchToTerminal }: DesktopViewProps) {
 
       {/* Apps */}
       {openApp === 'inside' && <InsideApp onClose={() => setOpenApp(null)} />}
+      {openApp === 'roles' && <RolesApp onClose={() => setOpenApp(null)} />}
       {openApp === 'stealth' && <StealthToolsApp onClose={() => setOpenApp(null)} />}
       {openApp === 'darknet' && <DarkNetApp onClose={() => setOpenApp(null)} />}
       {openApp === 'isp' && <IspApp onClose={() => setOpenApp(null)} />}
       {openApp === 'hacktool' && <HackToolApp onClose={() => setOpenApp(null)} onGameOver={() => window.location.reload()} />}
+      {openApp === 'zeroday' && <ZeroDayVipApp onClose={() => setOpenApp(null)} />}
+      {openApp === 'whitehat' && <WhiteHatAuditApp onClose={() => setOpenApp(null)} />}
 
       <Taskbar onSwitchToTerminal={onSwitchToTerminal} currentTime={currentTime} />
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTools, toggleTool, getFakeIp, subscribe, getOwnedTools, unlockTool, getCrypto, spendCrypto } from '../game/gameStore';
+import { getTools, toggleTool, getFakeIp, subscribe, getOwnedTools, unlockTool, getCrypto, spendCrypto, clearSave } from '../game/gameStore';
 import type { StealthTools as ToolsState } from '../game/gameStore';
 
 interface StealthToolsProps { onClose: () => void; }
@@ -21,8 +21,8 @@ export default function StealthToolsApp({ onClose }: StealthToolsProps) {
   const crypto = getCrypto();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 landscape:p-1" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
-      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[500px] h-[95vh] md:h-[580px]" style={{
+    <div className="fixed inset-0 z-50 flex items-center landscape:items-start md:items-center justify-center overflow-y-auto p-2 landscape:py-8 landscape:px-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[500px] h-[95vh] landscape:h-[450px] md:h-[580px]" style={{
         background: 'linear-gradient(180deg, #0c0e14 0%, #080a10 100%)',
         border: '1px solid rgba(0,255,136,0.15)', boxShadow: '0 0 60px rgba(0,255,136,0.08)',
       }}>
@@ -103,7 +103,7 @@ export default function StealthToolsApp({ onClose }: StealthToolsProps) {
 
         {/* Readiness summary */}
         <div className="p-3 shrink-0 font-mono" style={{ borderTop: '1px solid rgba(0,255,136,0.08)' }}>
-          <div className="flex items-center justify-around text-[10px]">
+          <div className="flex items-center justify-around text-[10px] mb-2.5">
             <div className="flex items-center gap-1.5">
               <span style={{ color: tools.stealthMode ? '#00ff88' : '#ff4444' }}>{tools.stealthMode ? '✓' : '✕'}</span>
               <span style={{ color: tools.stealthMode ? '#00ff88' : '#ff4444' }}>Scan Ready</span>
@@ -118,6 +118,20 @@ export default function StealthToolsApp({ onClose }: StealthToolsProps) {
               </span>
               <span style={{ color: '#556655' }}>Tools Active</span>
             </div>
+          </div>
+          
+          <div className="mt-2.5 pt-2 flex justify-center border-t border-dashed border-red-500/10">
+            <button
+              onClick={() => {
+                if (window.confirm('Apakah Anda yakin ingin menghapus semua progress game dan mulai dari awal?')) {
+                  clearSave();
+                  window.location.reload();
+                }
+              }}
+              className="w-full py-1 rounded text-[9px] font-bold tracking-widest text-[#ff4444] border border-[#ff4444]/25 hover:bg-[#ff4444]/10 transition-colors uppercase"
+            >
+              ⚠️ Reset Progress Game
+            </button>
           </div>
         </div>
       </div>

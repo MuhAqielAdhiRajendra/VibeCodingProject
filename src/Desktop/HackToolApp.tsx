@@ -178,7 +178,6 @@ export default function HackToolApp({ onClose, onGameOver }: { onClose: () => vo
     if (res.caught) {
       addLog(`[ERROR] ${res.message}`);
       setIsProcessing(false);
-      setTimeout(() => onGameOver(), 2000);
     } else {
       addLog(`[PROFIT] ${res.message}`);
       setIsProcessing(false);
@@ -189,8 +188,8 @@ export default function HackToolApp({ onClose, onGameOver }: { onClose: () => vo
   const speedLabel = speed >= 50 ? '🟢' : speed >= 10 ? '🟡' : '🔴';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 landscape:p-1" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
-      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[700px] h-[95vh] md:h-[500px]" style={{
+    <div className="fixed inset-0 z-50 flex items-center landscape:items-start md:items-center justify-center overflow-y-auto p-2 landscape:py-8 landscape:px-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+      <div className="relative flex flex-col rounded-xl overflow-hidden w-[95vw] md:w-[700px] h-[95vh] landscape:h-[420px] md:h-[500px]" style={{
         background: '#050a0f', border: '1px solid #00ffaa', boxShadow: '0 0 50px rgba(0, 255, 170, 0.15)'
       }}>
         {/* Top Bar */}
@@ -209,41 +208,44 @@ export default function HackToolApp({ onClose, onGameOver }: { onClose: () => vo
         <div className="flex-1 flex flex-col p-4 overflow-hidden gap-4">
           
           {/* Controls */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
             <button
               onClick={handleShareVirus}
               disabled={isProcessing || connectedDevice}
-              className="bg-[#ffaa0022] hover:bg-[#ffaa0044] text-[#ffaa00] border border-[#ffaa0055] px-4 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50"
+              className="bg-[#ffaa0022] hover:bg-[#ffaa0044] text-[#ffaa00] border border-[#ffaa0055] px-4 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50 w-full sm:w-auto shrink-0"
               title="Broadcast infection to local network"
             >
               📡 SHARE VIRUS
             </button>
-            <input 
-              type="text" 
-              value={ipInput}
-              onChange={e => setIpInput(e.target.value)}
-              disabled={isProcessing || connectedDevice}
-              placeholder="Target IP Address (e.g. 192.168.1.104)"
-              className="flex-1 bg-[#0a1520] border border-[#00ffaa33] text-[#00ffaa] p-2 rounded font-mono text-sm focus:outline-none focus:border-[#00ffaa]"
-            />
-            {!connectedDevice ? (
-              <button 
-                onClick={handleConnect}
-                disabled={isProcessing || !ipInput.trim()}
-                className="bg-[#00ffaa22] hover:bg-[#00ffaa44] text-[#00ffaa] border border-[#00ffaa55] px-6 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50"
-              >
-                CONNECT
-              </button>
-            ) : (
-              <button 
-                onClick={handleDisconnect}
-                disabled={isProcessing}
-                className="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 px-4 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50"
-              >
-                DISCONNECT
-              </button>
-            )}
+            <div className="flex flex-1 gap-2 w-full">
+              <input 
+                type="text" 
+                value={ipInput}
+                onChange={e => setIpInput(e.target.value)}
+                disabled={isProcessing || connectedDevice}
+                placeholder="Target IP (e.g. 192.168.1.104)"
+                className="flex-1 bg-[#0a1520] border border-[#00ffaa33] text-[#00ffaa] p-2 rounded font-mono text-sm focus:outline-none focus:border-[#00ffaa] min-w-0"
+              />
+              {!connectedDevice ? (
+                <button 
+                  onClick={handleConnect}
+                  disabled={isProcessing || !ipInput.trim()}
+                  className="bg-[#00ffaa22] hover:bg-[#00ffaa44] text-[#00ffaa] border border-[#00ffaa55] px-4 sm:px-6 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50 shrink-0"
+                >
+                  CONNECT
+                </button>
+              ) : (
+                <button 
+                  onClick={handleDisconnect}
+                  disabled={isProcessing}
+                  className="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 px-4 py-2 rounded font-mono font-bold transition-colors disabled:opacity-50 shrink-0"
+                >
+                  DISCONNECT
+                </button>
+              )}
+            </div>
           </div>
+
 
           {/* Action Area */}
           {connectedDevice && (
