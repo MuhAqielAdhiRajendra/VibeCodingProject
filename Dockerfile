@@ -1,5 +1,5 @@
 # TAHAP 1: Proses Build React (Seolah-olah mesin menjalankan npm run build)
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 # Copy file package.json dan install dependency
 COPY package*.json ./
